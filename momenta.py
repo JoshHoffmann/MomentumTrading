@@ -12,7 +12,7 @@ def getPZScores(ts:pd.DataFrame):
      z-scores."""
     mean = ts.mean(axis=1)
     std = ts.std(axis=1)
-    return ts.sub(mean, axis = 0).div(std,axis=0)
+    return ts.sub(mean, axis = 0).div(std,axis=0).dropna()
 def getMomentum(priceData:pd.DataFrame, periods:list):
     """This function retrieves momenta time series for a multiple momentum time series. It takes a pandas dataFrame of
     price time series and a list of momenta periods. It returns a period-indexed dataFrame of the momenta time series"""
