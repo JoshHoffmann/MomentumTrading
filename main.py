@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import backtest
+import metrics
 import momenta
 import ARIMA
 from statsmodels.tsa.arima.model import ARIMA as arima
@@ -16,7 +17,7 @@ closeData.index = pd.to_datetime([date.split()[0] for date in closeData.index]) 
 
 closeData.index = pd.DatetimeIndex(closeData.index).to_period('D')
 
-closeData = closeData.iloc[0:400,100:111]
+closeData = closeData.iloc[0:400,100:103]
 
 periods = [1,3,6] # Define Momenta periods (months)
 
@@ -28,7 +29,7 @@ for p in periods:
     plt.show()
 
 
-s = backtest.zpThresh(zscores,train_window=300,period=1, threshold=2.5)
+s = backtest.zpThresh(zscores,train_window=300,period=1)
 bt = backtest.Backtest(s)
 signal = bt.run().dropna()
 print(signal.head())
@@ -37,18 +38,18 @@ signal.plot()
 plt.show()
 
 
-prices = closeData.loc[signal.index,signal.columns]
-returns = (signal.shift(1)*prices.pct_change()).sum(axis=1)
+returns = metrics.Returns(closeData,signal)
+cumulative = metrics.CumulativeReturns(closeData,signal)
+Sharpe = metrics.Sharpe(closeData,signal)
+print('Sharpe Ratio ', Sharpe)
 
-cumulative = (1+returns).cumprod()-1
+
 
 plt.figure()
 returns.plot()
 cumulative.plot()
 plt.show()
 
-Sharpe = np.round(returns.mean(axis=0)/returns.std(axis=0),2)
-print('Sharpe Ratio ', Sharpe)
 
 
 

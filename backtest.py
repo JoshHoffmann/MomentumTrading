@@ -1,10 +1,9 @@
 import ARIMA
 import pandas as pd
-import pmdarima
-import numpy as np
-import matplotlib.pyplot as plt
-from statsmodels.tsa.arima.model import ARIMA as arima
 import weighting
+import plotting
+import matplotlib.pyplot as plt
+
 
 
 
@@ -15,6 +14,7 @@ class zpThresh:
         self.train_window = train_window
         self.period = period
         self.threshold = threshold
+        self.pre_smooth = pre_smooth
 
     def simulateSignal(self):
         zp = self.z.loc[self.period,'z']  # Get desired momentum period
@@ -32,10 +32,13 @@ class zpThresh:
             for c in zp.columns:
                 model = models[c]
                 model.update(zp.loc[t,c]) # Update model with current observation
-                forecast, conf =  model.predict(n_periods=1, return_conf_int=True) # Forecast 1 step ahead
+                m = model.predict(n_periods=1, return_conf_int=True)
+                print('model', m)
+                forecast, conf =  m[0][0], m[1][0]  # Forecast 1 step ahead
                 z_forecast.loc[t,c]= forecast # Save forecast
                 z_conf.loc[t,c] = conf
          # This strategy activates trading signals when the z-score is forecasted to be above a threshold
+        plotting.plotForecast(zp,z_forecast)
         unweighted = (z_forecast.abs().shift(-1)>self.threshold).astype(int)
         weighted = weighting.signalWeighter(unweighted=unweighted, z=zp).getWeightedSignal('linear')
         return weighted
