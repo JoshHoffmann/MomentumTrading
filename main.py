@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from fontTools.misc.cython import returns
-
 import backtest
 import momenta
 import ARIMA
@@ -18,42 +16,38 @@ closeData.index = pd.to_datetime([date.split()[0] for date in closeData.index]) 
 
 closeData.index = pd.DatetimeIndex(closeData.index).to_period('D')
 
-closeData = closeData.iloc[0:500,100:111]
+closeData = closeData.iloc[0:400,100:111]
 
 periods = [1,3,6] # Define Momenta periods (months)
 
 Momenta = momenta.getMomentum(closeData, periods) # Get momenta for all periods
 Momenta.loc[1,'momentum'].plot()
 zscores = momenta.getZScores(Momenta) # Get cross-sectional z-scores for all momenta periods
-z = zscores.loc[1,'z']
-z.plot()
-
-p_space = list(range(1,5))
-q_space = list(range(1,5))
+for p in periods:
+    zscores.loc[p,'z'].plot()
+    plt.show()
 
 
-print('CLASS TEST')
-s = backtest.zpThresh(z,300,0.05,p_space, q_space)
+s = backtest.zpThresh(zscores,train_window=300,period=1, threshold=2.5)
 bt = backtest.Backtest(s)
-unweighted = bt.run().dropna()
-print(unweighted.head())
-plt.figure()
-unweighted.plot()
+signal = bt.run().dropna()
+print(signal.head())
+
+signal.plot()
 plt.show()
-weighted = unweighted*z.loc[unweighted.index,:]
-normalised = weighted.div(weighted.abs().sum(axis=1), axis=0).where(weighted.abs().sum(axis=1)!=0, weighted)
 
-prices = closeData.loc[normalised.index,normalised.columns]
-r = (normalised.shift(1)*prices.pct_change()).sum(axis=1)
 
-cumulative = (1+r).cumprod()-1
+prices = closeData.loc[signal.index,signal.columns]
+returns = (signal.shift(1)*prices.pct_change()).sum(axis=1)
+
+cumulative = (1+returns).cumprod()-1
 
 plt.figure()
-r.plot()
+returns.plot()
 cumulative.plot()
 plt.show()
 
-Sharpe = np.round(r.mean(axis=0)/r.std(axis=0),2)
+Sharpe = np.round(returns.mean(axis=0)/returns.std(axis=0),2)
 print('Sharpe Ratio ', Sharpe)
 
 
