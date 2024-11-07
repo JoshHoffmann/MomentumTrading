@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sea
 
 def plotReturns(returns):
 
@@ -9,6 +10,21 @@ def plotReturns(returns):
     plt.xlabel('Time')
     plt.ylabel('Returns')
     plt.title('Strategy Returns')
+    plt.show()
+
+    plotReturnsHist(returns)
+
+def plotReturnsHist(returns):
+    mean  = returns.mean()
+    plt.figure(figsize=(10, 6))
+
+    sea.histplot(returns, bins=30, kde=True, color="skyblue", stat="density")
+    plt.axvline(mean, color='red', linestyle='--', label=f'Mean: {mean:.2f}')
+
+    plt.xlabel('Returns')
+    plt.ylabel('Density')
+    plt.title('Distribution of Strategy Returns')
+    plt.legend()
     plt.show()
 
 def plotCumulative(cumulative):
