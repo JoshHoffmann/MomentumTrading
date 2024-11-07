@@ -11,3 +11,5 @@ def plotForecast(obs:pd.DataFrame,forecast:pd.DataFrame,n=1):
     plt.plot(forecast[selected].values, label='{} forecast z-score'.format(selected))
     plt.legend()
     plt.show()
+
+
