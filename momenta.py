@@ -1,20 +1,23 @@
+""" Handles all momenta calculations """
+
 import pandas as pd
 
 # Define a function to calculate p-period momenta
-def getPMomentum(priceData:pd.DataFrame, p:int):
+def getPMomentum(priceData:pd.DataFrame, p:int)->pd.DataFrame:
     """This function calculates p-period momentum from stock price data. It takes a pandas dataFrame of price time
     series and an integer p (the period in months). It returns a dataFrame of the momenta time series."""
 
     return priceData - priceData.shift(22*p)
 
-def getPZScores(ts:pd.DataFrame):
+def getPZScores(ts:pd.DataFrame)->pd.DataFrame:
     """This function calculates the time series of cross-sectional z-scores of time series data.
     It takes as input a dataFrame containing 1 or more time series. It returns a dataFrame of the cross-sectional
      z-scores."""
     mean = ts.mean(axis=1)
     std = ts.std(axis=1)
     return ts.sub(mean, axis = 0).div(std,axis=0).dropna()
-def getMomentum(priceData:pd.DataFrame, periods:list):
+
+def getMomentum(priceData:pd.DataFrame, periods:list)->pd.DataFrame:
     """This function retrieves momenta time series for a multiple momentum time series. It takes a pandas dataFrame of
     price time series and a list of momenta periods. It returns a period-indexed dataFrame of the momenta time series"""
     print('Getting Momenta')
@@ -24,7 +27,7 @@ def getMomentum(priceData:pd.DataFrame, periods:list):
     momentum_df = pd.DataFrame(list(momentum_dict.items()), columns=['periods', 'momentum']).set_index('periods')
     return momentum_df
 
-def getZScores(Momentum_df:pd.DataFrame):
+def getZScores(Momentum_df:pd.DataFrame)->pd.DataFrame:
     """This function calculates cross-sectional z-scores for a collection of p-period momentum time series. It takes as
     input a period-indexed master data frame containing p-period momenta time series. It outputs a period-index master
      data frame of p-period momenta cross-sectional z-score time series"""

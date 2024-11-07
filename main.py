@@ -10,7 +10,7 @@ import momenta
 closeData = pd.read_csv('2020-2024_Data.csv', index_col='date')
 closeData.index = pd.to_datetime(closeData.index)
 
-closeData = closeData.iloc[0:400,0:4] # Choose sub set for testing
+closeData = closeData.iloc[0:400,0:10] # Choose sub set for testing
 
 periods = [1,3,6] # Define Momenta periods (months)
 
@@ -23,27 +23,22 @@ for p in periods:
     plt.show()
 
 # Get simulated trading strategy for backtest of zpThresh strategy.
-signal = (backtest.Longshort(zscores,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA', pre_smooth_params={'window':5}).
-          strategy(strategy='zpThresh',period=1,threshold=1))
+signal = (backtest.Longshort(zscores,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
+                              pre_smooth_params={'window':3},weighting_func='softmax').
+           strategy(strategy='zpThresh',period=1,threshold=1.5))
 
-signal.plot()
+
+
+signal.plot() # Plot trading signal
 plt.show()
 
+# Get metrics
 returns = metrics.Returns(closeData,signal,'W')
 cumulative = metrics.CumulativeReturns(closeData,signal,'W')
 Sharpe = metrics.Sharpe(closeData,signal,'W')
 print('Sharpe Ratio ', Sharpe)
 
-print('RETURNS')
-print(returns.head())
 
-print('CUMULATIVE')
-print(cumulative.head())
-
-returns.dropna().plot()
-plt.show()
-cumulative.dropna().plot()
-plt.show()
 
 
 

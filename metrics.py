@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import backtest
+import plotting
 
 def priceRebalance(priceData,rebalancePeriod):
     rebalancePoints = priceData.resample(rebalancePeriod).last().index
@@ -22,12 +22,14 @@ def Returns(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod:str):
     print(signal.head())
     returns = (signal * pct.dropna()).sum(axis=1)
     returns.columns=['Returns']
+    plotting.plotReturns(returns)
     return returns
 
 def CumulativeReturns(priceData:pd.DataFrame,signal:pd.DataFrame, rebalancePeriod):
     returns = Returns(priceData,signal,rebalancePeriod)
     cumulativeReturns = (1+returns).cumprod()-1
     cumulativeReturns.columns = ['CumulativeReturns']
+    plotting.plotCumulative(cumulativeReturns)
     return cumulativeReturns
 
 def Sharpe(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod):
