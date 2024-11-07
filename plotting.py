@@ -18,7 +18,7 @@ def plotReturnsHist(returns):
     mean  = returns.mean()
     plt.figure(figsize=(10, 6))
 
-    sea.histplot(returns, bins=30, kde=True, color="skyblue", stat="density")
+    sea.histplot(returns, bins=40, color="skyblue", stat="density")
     plt.axvline(mean, color='red', linestyle='--', label=f'Mean: {mean:.2f}')
 
     plt.xlabel('Returns')
@@ -42,7 +42,7 @@ def plotForecast(obs:pd.DataFrame,forecast:pd.DataFrame,n=1):
     forecast[selected].plot(label='forecast')'''
     plt.plot(obs.loc[T,selected].values, label='{} observed z-score'.format(selected))
     plt.plot(forecast[selected].values, label='{} forecast z-score'.format(selected))
-    plt.title('{} Observed vs Forecast'.format(obs.name))
+    plt.title('Observed vs Forecast')
     plt.legend()
     plt.show()
 

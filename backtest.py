@@ -50,7 +50,6 @@ class Longshort:
         """ Handles pre-smoothing of data."""
         if self.pre_smoothing == 'MA':
             window = self.pre_smooth_params.get('window',5) # window defaults to 5
-            print('window',window)
             return z_pre.rolling(window).mean().dropna()
         elif self.pre_smoothing == 'EWM':
             span = self.pre_smooth_params.get('span',3) # span defaults to 3
@@ -65,6 +64,7 @@ class Longshort:
          selected momentum period (this must be one of the periods already calculated) and the desired threshold. '''
 
         zp = self.preSmooth(self.z.loc[period,'z']) # Get desired momentum period
+        zp.name = 'z{}'.format(period)
 
         # Train ARIMA models on initial data
         models = ARIMA.trainARIMA(zp,self.train_window,d_alpha=self.alpha)
@@ -73,6 +73,7 @@ class Longshort:
         # at t+1 day ahead. The reason for this is to make activating the trading signal a bit easier which can be seen
         # below
         z_forecast = pd.DataFrame(index=zp.index[self.train_window:], columns=zp.columns)
+        z_forecast.name = 'z{} forecast'.format(period)
         z_conf = pd.DataFrame(index=zp.index[self.train_window:], columns=zp.columns)
 
         # Simulate trade by iterating through days from end of training onwards
