@@ -3,6 +3,7 @@ import ARIMA
 import pandas as pd
 import weighting
 import plotting
+import filters
 
 
 def Rebalance(w:pd.DataFrame, rebalancePeriod:str)->pd.DataFrame:
@@ -94,11 +95,17 @@ class Longshort:
 
         # This strategy activates trading signals when the z-score is forecasted to be above a threshold
         unweighted = (z_forecast.abs()>threshold).astype(int) # Activate signals acording to trading logic
+        test = filters.filter(zp,unweighted).filterFunction('TopMag',top=15)
+        unweighted=test
         # Weight signals according to selected weighting
         weighted = (weighting.signalWeighter(unweighted=unweighted, z=zp,momenta=self.momenta.loc[period,'momentum']).
                     getWeightedSignal(self.weighting_func, self.weighting_params))
-
+        print('Rebalance by ', self.rebalancePeriod)
+        print('weighted')
+        print(weighted.head(50))
         rebalancedSignal = Rebalance(weighted,self.rebalancePeriod) # Rebalance signal according to desired frequency
+        print('Rebalanced')
+        print(rebalancedSignal.head(50))
 
         return rebalancedSignal
 
@@ -149,7 +156,7 @@ class Longshort:
         plotting.plotForecast(zslow.shift(-1), zslow_forecast)
         # This strategy activates trading signals when the zfast>zslow
         unweighted = (zfast_forecast.abs() > zslow_forecast.abs()).astype(int)
-        weighted = weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum']).getWeightedSignal('linear')
+        weighted = weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum']).getWeightedSignal(self.weighting_func,self.weighting_params)
         rebalancedSignal = Rebalance(weighted, self.rebalancePeriod)
         return rebalancedSignal
 

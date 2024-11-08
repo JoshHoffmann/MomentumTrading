@@ -12,13 +12,12 @@ def plotReturns(returns):
     plt.title('Strategy Returns')
     plt.show()
 
-    plotReturnsHist(returns)
 
 def plotReturnsHist(returns):
     mean  = returns.mean()
     plt.figure(figsize=(10, 6))
 
-    sea.histplot(returns, bins=40, color="skyblue", stat="density")
+    sea.histplot(returns, bins=60, color="skyblue", stat="density")
     plt.axvline(mean, color='red', linestyle='--', label=f'Mean: {mean:.2f}')
 
     plt.xlabel('Returns')

@@ -13,7 +13,6 @@ class signalWeighter:
         print('BETA = ', beta)
         momenta_sign = self.momenta.apply(np.sign)
         weighted = beta*self.unweighted*self.z.abs()*momenta_sign
-        print(self.momenta.apply(np.sign).dropna().head())
         # normalise
         weighted.div(weighted.abs().sum(axis=1), axis=0).apply(np.round)
         return weighted
