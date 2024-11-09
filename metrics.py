@@ -28,14 +28,14 @@ def Returns(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod:str):
 
     return returns
 
-def CumulativeReturns(priceData:pd.DataFrame,signal:pd.DataFrame, rebalancePeriod):
+def CumulativeReturns(priceData:pd.DataFrame,signal:pd.DataFrame, rebalancePeriod)->pd.DataFrame:
     returns = Returns(priceData,signal,rebalancePeriod)
     cumulativeReturns = (1+returns).cumprod()-1
     cumulativeReturns.columns = ['CumulativeReturns']
     plotting.plotCumulative(cumulativeReturns)
     return cumulativeReturns
 
-def Sharpe(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod):
+def Sharpe(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod)->float:
     returns = Returns(priceData,signal,rebalancePeriod)
     Sharpe = np.round(returns.mean(axis=0) / returns.std(axis=0), 2)
     return Sharpe

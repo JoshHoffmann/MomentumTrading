@@ -4,13 +4,14 @@ class filter:
         self.z = z
         self.unweighted = unweighted
 
-    def filterFunction(self,filter_func='TopMag', **kwargs):
+    def filterFunction(self,filter_func,params):
         if filter_func=='TopMag':
-            return self.TopMag(**kwargs)
+            return self.TopMag(params)
         if filter_func=='vol':
-            return self.vol(**kwargs)
+            return self.vol(params)
 
-    def TopMag(self,top:int=3):
+    def TopMag(self,params):
+        top = params.get('top',5)
         print('top = ', top)
         for index, row in self.z.iterrows():
             ranked = row.abs().sort_values(ascending=False)  # At each datetime, rank in descending by |z|
@@ -18,10 +19,16 @@ class filter:
             self.unweighted.loc[index, (~self.unweighted.columns.isin(selectedTickers))] = 0
         return self.unweighted
 
-    def vol(self,price:pd.DataFrame,window:int=22,top:int=5,high:bool=False):
-            vol = price.rolling(window=window).std()
+    def vol(self,params):
+            priceData = params.get('priceData')
+            window = params.get('window',66)
+            print('window = ', window)
+            top = params.get('top',5)
+            high = params.get('high', False)
+            vol = priceData.rolling(window=window).std()
             for index, row in vol.iterrows():
                 ranked = row.sort_values(ascending=high)
                 selectedTickers = ranked.head(top).index.tolist()
                 self.unweighted.loc[index, (~self.unweighted.columns.isin(selectedTickers))] = 0
-                return self.unweighted
+            print('Successfully vol weighted')
+            return self.unweighted

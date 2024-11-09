@@ -5,6 +5,8 @@ import pandas as pd
 import weighting
 import plotting
 import filters
+import metrics
+import matplotlib.pyplot as plt
 
 
 def Rebalance(w:pd.DataFrame, rebalancePeriod:str)->pd.DataFrame:
@@ -36,9 +38,10 @@ class Longshort:
     pre_smooth params - dictionary of parameters for pre-smoothing function of the form {'param_name':param}.
      E.g. When pre-smoothing by 'MA' pre_smoothing_params= {'window':5} will smooth by 5 day moving average.
     """
-    def __init__(self,z:pd.DataFrame,momenta:pd.DataFrame,train_window:int,rebalancePeriod:str='W',alpha:float=0.05,
+    def __init__(self,z:pd.DataFrame,closeData:pd.DataFrame,momenta:pd.DataFrame,train_window:int,rebalancePeriod:str='W',alpha:float=0.05,
                  pre_smoothing=None,pre_smooth_params=None,weighting_func:str='linear',weighting_params=None, filter_func=None,filter_params=None):
         self.z = z
+        self.closeData = closeData
         self.momenta = momenta
         self.train_window = train_window
         self.rebalancePeriod = rebalancePeriod
@@ -115,6 +118,7 @@ class Longshort:
 
         rebalancedSignal = Rebalance(weighted,self.rebalancePeriod) # Rebalance signal according to desired frequency
 
+        getMetrics(rebalancedSignal,self.closeData,self.rebalancePeriod)
 
         return rebalancedSignal
 
@@ -165,10 +169,12 @@ class Longshort:
         plotting.plotForecast(zslow.shift(-1), zslow_forecast)
         # This strategy activates trading signals when the zfast>zslow
         prefiltered = (zfast_forecast.abs() > zslow_forecast.abs()).astype(int)
-        unweighted = self.filterWeight(zfast,prefiltered)
+        unweighted = filters.filter(zfast,prefiltered).filterFunction(self.filter_func,self.filter_params)
         weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'])
                     .getWeightedSignal(self.weighting_func,self.weighting_params))
         rebalancedSignal = Rebalance(weighted, self.rebalancePeriod)
+
+        getMetrics(rebalancedSignal,self.closeData,self.rebalancePeriod)
         return rebalancedSignal
 
     def strategy(self,strategy='zpThresh',**kwargs):
@@ -176,3 +182,19 @@ class Longshort:
             return self.zpThresh(**kwargs)
         elif strategy == 'CrossOver':
             return self.CrossOver(**kwargs)
+
+
+def getMetrics(signal,priceData,rebalance):
+    # Get metrics
+    returns = metrics.Returns(priceData, signal, rebalance)
+    print('RETURNS')
+    print(returns)
+    plotting.plotReturns(returns)
+    plotting.plotReturnsHist(returns)
+    cumulative = metrics.CumulativeReturns(priceData, signal, rebalance)
+    print('CUMULATIVE')
+    print(cumulative)
+    Sharpe = metrics.Sharpe(priceData, signal, rebalance)
+    print('Sharpe Ratio ', Sharpe)
+
+    plt.show()

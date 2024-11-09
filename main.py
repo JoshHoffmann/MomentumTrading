@@ -12,7 +12,7 @@ pd.set_option('display.max_columns', None)'''
 closeData = pd.read_csv('2020-2024_Data.csv', index_col='date')
 closeData.index = pd.to_datetime(closeData.index)
 
-closeData = closeData.iloc[0:400,0:11] # Choose sub set for testing
+closeData = closeData.iloc[0:350,0:9] # Choose sub set for testing
 
 periods = [1,3,6] # Define Momenta periods (months)
 
@@ -24,27 +24,18 @@ for p in periods:
     zscores.loc[p,'z'].plot()
     plt.show()
 
-# Get simulated trading strategy for backtest of zpThresh strategy.
-signal = (backtest.Longshort(zscores,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
-                              pre_smooth_params={'window':3},weighting_func='linear',filter_func='TopMag',filter_params={'top':5}).
-           strategy(strategy='zpThresh',period=1,threshold=1.5))
+
+signal = (backtest.Longshort(zscores,closeData,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='EWM',
+                              pre_smooth_params={'span':10},weighting_func='softmax',weighting_params={'beta':1},
+                                filter_func='vol', filter_params={'priceData':closeData,'window':40}).
+           strategy(strategy='CrossOver',fast=1,slow=3))
 
 signal.plot() # Plot trading signal
 plt.show()
-print('SIGNAL')
-print(signal)
 
-# Get metrics
-returns = metrics.Returns(closeData,signal,'W')
-print('RETURNS')
-print(returns)
-plotting.plotReturns(returns)
-plotting.plotReturnsHist(returns)
-cumulative = metrics.CumulativeReturns(closeData,signal,'W')
-print('CUMULATIVE')
-print(cumulative)
-Sharpe = metrics.Sharpe(closeData,signal,'W')
-print('Sharpe Ratio ', Sharpe)
+
+
+
 
 
 
