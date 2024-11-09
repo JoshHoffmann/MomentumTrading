@@ -4,22 +4,13 @@ import plotting
 pd.set_option('display.max_rows', None)  # Show all rows
 pd.set_option('display.max_columns', None)
 
-def priceRebalance(priceData,rebalancePeriod):
-    rebalancePoints = priceData.resample(rebalancePeriod).last().index
-
-    adj_rebalancePoints = [priceData.index[priceData.index <= point][-1] for point in rebalancePoints]
-
-    w_rebalanced = priceData.loc[adj_rebalancePoints].reindex(priceData.index).ffill().dropna()
-
-    return w_rebalanced, adj_rebalancePoints
 
 def Returns(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod:str,t=True):
 
-    prices_rebalanced, rebalancePoints = priceRebalance(priceData.loc[signal.index],rebalancePeriod)
-
-    pct = prices_rebalanced.loc[rebalancePoints].pct_change().fillna(0)
-
-    returns = (pct * signal.loc[rebalancePoints]).sum(axis=1)
+    pct = priceData.pct_change().fillna(0)
+    returns = (pct.loc[signal.index] * signal).sum(axis=1)
+    print('RETURNS')
+    print(returns)
 
     return returns
 

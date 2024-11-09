@@ -12,7 +12,7 @@ pd.set_option('display.max_columns', None)
 closeData = pd.read_csv('2020-2024_Data.csv', index_col='date')
 closeData.index = pd.to_datetime(closeData.index)
 
-closeData = closeData.iloc[0:1000,0:49] # Choose sub set for testing
+closeData = closeData.iloc[900:1100,0:15] # Choose sub set for testing
 
 periods = [1,3,6] # Define Momenta periods (months)
 

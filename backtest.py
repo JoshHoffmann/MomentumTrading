@@ -95,7 +95,7 @@ class Longshort:
 
         # This strategy activates trading signals when the z-score is forecasted to be above a threshold
         unweighted = (z_forecast.abs()>threshold).astype(int) # Activate signals acording to trading logic
-        test = filters.filter(zp,unweighted).filterFunction('TopMag',top=15)
+        test = filters.filter(zp,unweighted).filterFunction('TopMag',top=7)
         unweighted=test
         # Weight signals according to selected weighting
         weighted = (weighting.signalWeighter(unweighted=unweighted, z=zp,momenta=self.momenta.loc[period,'momentum']).
