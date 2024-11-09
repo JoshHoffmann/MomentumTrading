@@ -1,4 +1,5 @@
 """ Handles Backtesting of strategies."""
+
 import ARIMA
 import pandas as pd
 import weighting
@@ -31,12 +32,12 @@ class Longshort:
     rebalancePeriod - string selecting desried portfolio rebalancing frequency i.e. daily ('D'), weekly ('W') etc
     alpha - float selecting critical value for adf test when determining order of integration d for ARIMA models.
     pre_smoothing - string selecting desired data pre-smoothing method (if any). Pre smoothing is applied to data before
-    training the ARIMA model. E.g. 'MA' for smoothng by moving average, 'EWW' for smoothing by exponential moving average
+    training the ARIMA model. E.g. 'MA' for smoothing by moving average, 'EWW' for smoothing by exponential moving average
     pre_smooth params - dictionary of parameters for pre-smoothing function of the form {'param_name':param}.
      E.g. When pre-smoothing by 'MA' pre_smoothing_params= {'window':5} will smooth by 5 day moving average.
     """
     def __init__(self,z:pd.DataFrame,momenta:pd.DataFrame,train_window:int,rebalancePeriod:str='W',alpha:float=0.05,
-                 pre_smoothing=None,pre_smooth_params=None,weighting_func:str='linear',weighting_params=None):
+                 pre_smoothing=None,pre_smooth_params=None,weighting_func:str='linear',weighting_params=None, filter_func=None,filter_params=None):
         self.z = z
         self.momenta = momenta
         self.train_window = train_window
@@ -46,6 +47,8 @@ class Longshort:
         self.pre_smooth_params = pre_smooth_params if pre_smooth_params else {}
         self.weighting_func = weighting_func
         self.weighting_params = weighting_params if weighting_params else {}
+        self.filter_func = filter_func
+        self.filter_params = filter_params if filter_params else {}
 
     def preSmooth(self,z_pre:pd.DataFrame)->pd.DataFrame:
         """ Handles pre-smoothing of data."""
@@ -58,7 +61,17 @@ class Longshort:
         else:
             return z_pre.dropna() # Return raw data if no pre-smoothing applied
 
+    def filterWeight(self,z_pre:pd.DataFrame,prefiltered:pd.DataFrame,**kwargs)->pd.DataFrame:
+        if self.filter_func=='TopMag':
+            top = self.filter_params.get('top',5)
+            return filters.filter(z_pre,prefiltered).filterFunction('TopMag',top=top)
+        if self.filter_func=='vol':
+            window = self.filter_params.get('window',40)
+            top = self.filter_params.get('top',5)
+            high = self.filter_params.get('high',False)
+            priceData = self.filter_params.get('price')
 
+            return filters.filter(z_pre,prefiltered).filterFunction('vol',priceData=priceData,window=window,top=top,high=high)
 
     def zpThresh(self, period:int=1,threshold:float=1.0)->pd.DataFrame:
         '''zpThresh strategy trades based on the selected p-period momentum being above a threshold. It takes the
@@ -90,22 +103,18 @@ class Longshort:
                 z_forecast.loc[t,c]= forecast # Save forecast
                 z_conf.loc[t,c] = conf
 
-        plotting.plotForecast(zp.shift(-1),z_forecast) # Call plotting function to ranndomly select a stock and plot
+        plotting.plotForecast(zp.shift(-1),z_forecast) # Call plotting function to randomly select a stock and plot
         # its observed and forecasted z score. Observed z scores need to be shifted to align with forecast dataframe
 
         # This strategy activates trading signals when the z-score is forecasted to be above a threshold
-        unweighted = (z_forecast.abs()>threshold).astype(int) # Activate signals acording to trading logic
-        test = filters.filter(zp,unweighted).filterFunction('TopMag',top=7)
-        unweighted=test
+        prefiltered = (z_forecast.abs()>threshold).astype(int) # Activate signals according to trading logic
+        unweighted = self.filterWeight(zp,prefiltered)
         # Weight signals according to selected weighting
         weighted = (weighting.signalWeighter(unweighted=unweighted, z=zp,momenta=self.momenta.loc[period,'momentum']).
                     getWeightedSignal(self.weighting_func, self.weighting_params))
-        print('Rebalance by ', self.rebalancePeriod)
-        print('weighted')
-        print(weighted.head(50))
+
         rebalancedSignal = Rebalance(weighted,self.rebalancePeriod) # Rebalance signal according to desired frequency
-        print('Rebalanced')
-        print(rebalancedSignal.head(50))
+
 
         return rebalancedSignal
 
@@ -155,8 +164,10 @@ class Longshort:
         plotting.plotForecast(zfast.shift(-1), zfast_forecast)
         plotting.plotForecast(zslow.shift(-1), zslow_forecast)
         # This strategy activates trading signals when the zfast>zslow
-        unweighted = (zfast_forecast.abs() > zslow_forecast.abs()).astype(int)
-        weighted = weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum']).getWeightedSignal(self.weighting_func,self.weighting_params)
+        prefiltered = (zfast_forecast.abs() > zslow_forecast.abs()).astype(int)
+        unweighted = self.filterWeight(zfast,prefiltered)
+        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'])
+                    .getWeightedSignal(self.weighting_func,self.weighting_params))
         rebalancedSignal = Rebalance(weighted, self.rebalancePeriod)
         return rebalancedSignal
 

@@ -1,28 +1,42 @@
 import pandas as pd
 import numpy as np
 import plotting
-pd.set_option('display.max_rows', None)  # Show all rows
-pd.set_option('display.max_columns', None)
+'''pd.set_option('display.max_rows', None)  # Show all rows
+pd.set_option('display.max_columns', None)'''
+
+def RebalanceReturns(priceData:pd.DataFrame, rebalancePeriod:str):
+
+    # Find rebalancing points based on desried frequency
+    rebalancePoints = priceData.resample(rebalancePeriod).last().index
+
+    # Rebalancing points may not coinccide with trading days. They must be adjusted accordingly
+    # Where the rebalancing day is not a trading day, rebalance at closest day before.
+    adj_rebalancePoints = [priceData.index[priceData.index <= point][-1] for point in rebalancePoints]  # Adjusted rebalance points
+
+    return adj_rebalancePoints
 
 
-def Returns(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod:str,t=True):
-
-    pct = priceData.pct_change().fillna(0)
-    returns = (pct.loc[signal.index] * signal).sum(axis=1)
-    print('RETURNS')
-    print(returns)
+def Returns(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod:str):
+    rebalancePoints = RebalanceReturns(signal,rebalancePeriod)
+    price_rebalance = priceData.loc[rebalancePoints]
+    pct = price_rebalance.pct_change().fillna(0)
+    print('PCT')
+    print(pct.head())
+    print('SIGNAL SLICED')
+    print(signal.loc[rebalancePoints].head())
+    returns = (pct* signal.loc[rebalancePoints]).sum(axis=1)
 
     return returns
 
 def CumulativeReturns(priceData:pd.DataFrame,signal:pd.DataFrame, rebalancePeriod):
-    returns = Returns(priceData,signal,rebalancePeriod,t=False)
+    returns = Returns(priceData,signal,rebalancePeriod)
     cumulativeReturns = (1+returns).cumprod()-1
     cumulativeReturns.columns = ['CumulativeReturns']
     plotting.plotCumulative(cumulativeReturns)
     return cumulativeReturns
 
 def Sharpe(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod):
-    returns = Returns(priceData,signal,rebalancePeriod,t=False)
+    returns = Returns(priceData,signal,rebalancePeriod)
     Sharpe = np.round(returns.mean(axis=0) / returns.std(axis=0), 2)
     return Sharpe
 
