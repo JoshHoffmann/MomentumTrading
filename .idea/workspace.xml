@@ -4,12 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9d10173f-5ae1-43ce-b17e-e5f27a5d1d3b" name="Changes" comment="FINAL correction to returns calculation">
+    <list default="true" id="9d10173f-5ae1-43ce-b17e-e5f27a5d1d3b" name="Changes" comment="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ARIMA.py" beforeDir="false" afterPath="$PROJECT_DIR$/ARIMA.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backtest.py" beforeDir="false" afterPath="$PROJECT_DIR$/backtest.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/filters.py" beforeDir="false" afterPath="$PROJECT_DIR$/filters.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/metrics.py" beforeDir="false" afterPath="$PROJECT_DIR$/metrics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/weighting.py" beforeDir="false" afterPath="$PROJECT_DIR$/weighting.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -160,7 +163,8 @@
       <workItem from="1731065600670" duration="1495000" />
       <workItem from="1731074986042" duration="9819000" />
       <workItem from="1731105834882" duration="5487000" />
-      <workItem from="1731132908046" duration="13192000" />
+      <workItem from="1731132908046" duration="22241000" />
+      <workItem from="1731192395097" duration="29424000" />
     </task>
     <task id="LOCAL-00001" summary="Switched to using pmdarima for determining arima model orders&#10;Added weighting module containing class to assign different weighting functions to activated trading signals">
       <option name="closed" value="true" />
@@ -226,7 +230,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731158548201</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter">
+      <option name="closed" value="true" />
+      <created>1731172843801</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1731172843801</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -241,12 +253,13 @@
     <MESSAGE value="cleaning" />
     <MESSAGE value="Final returns correction" />
     <MESSAGE value="FINAL correction to returns calculation" />
-    <option name="LAST_COMMIT_MESSAGE" value="FINAL correction to returns calculation" />
+    <MESSAGE value="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter" />
+    <option name="LAST_COMMIT_MESSAGE" value="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/main_py$main.coverage" NAME="main Coverage Results" MODIFIED="1731105258541" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Momentum_Trading$main.coverage" NAME="main Coverage Results" MODIFIED="1730839190382" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/MomentumTrading2$main.coverage" NAME="main Coverage Results" MODIFIED="1731172548652" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MomentumTrading2$main.coverage" NAME="main Coverage Results" MODIFIED="1731283760891" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Momentum_Trading$momenta.coverage" NAME="momenta Coverage Results" MODIFIED="1730760197802" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

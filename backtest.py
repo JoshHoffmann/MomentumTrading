@@ -7,6 +7,11 @@ import plotting
 import filters
 import metrics
 import matplotlib.pyplot as plt
+import warnings
+from joblib import Parallel, delayed
+
+
+warnings.filterwarnings('ignore', "No supported index is available. Prediction results will be given with an integer index beginning at `start`.")
 
 
 def Rebalance(w:pd.DataFrame, rebalancePeriod:str)->pd.DataFrame:
@@ -26,6 +31,38 @@ def Rebalance(w:pd.DataFrame, rebalancePeriod:str)->pd.DataFrame:
     return w_rebalanced
 
 
+def forecast_stock(stock, zp, models, T):
+    """Sequentially update and forecast for each stock in its own process."""
+    forecasts = []
+    end = T[-1]
+    for t in T:
+        #print('t = {}, T = {}'.format(t,end))
+        model = models[stock]
+        # Update model with latest data point for the stock
+        model.update(zp.loc[t, stock])
+
+        # Forecast the next time step
+        forecast = model.predict(n_periods=1)
+
+        # Append forecast value for (t, stock) to the results list
+        forecasts.append((t, forecast[0]))  # Check here if forecast needs [0] or just `forecast`
+    return stock, forecasts
+
+def parallel_stock_forecasts(models, zp, T, z_forecast):
+    """Parallelize forecasts across stocks, retaining sequential model updates within each stock."""
+    # Run forecast_stock in parallel for each stock
+    results = Parallel(n_jobs=-1)(delayed(forecast_stock)(
+        stock, zp, models, T
+    ) for stock in zp.columns)
+
+    # Store results in z_forecast DataFrame
+    for stock, forecasts in results:
+        for t, forecast in forecasts:
+            z_forecast.loc[t, stock] = forecast
+
+    return z_forecast
+
+
 class Longshort:
     """ Class of Long-Short strategies.
     z - Master dataframe of z-scores
@@ -38,8 +75,8 @@ class Longshort:
     pre_smooth params - dictionary of parameters for pre-smoothing function of the form {'param_name':param}.
      E.g. When pre-smoothing by 'MA' pre_smoothing_params= {'window':5} will smooth by 5 day moving average.
     """
-    def __init__(self,z:pd.DataFrame,closeData:pd.DataFrame,momenta:pd.DataFrame,train_window:int,rebalancePeriod:str='W',alpha:float=0.05,
-                 pre_smoothing=None,pre_smooth_params=None,weighting_func:str='linear',weighting_params=None, filter_func=None,filter_params=None):
+    def __init__(self, z:pd.DataFrame, closeData:pd.DataFrame, momenta:pd.DataFrame, train_window:int, rebalancePeriod:str='W', alpha:float=0.05,
+                 pre_smoothing=None, pre_smooth_params=None, weighting_func:str='linear', weighting_params=None, filter_func=None, filter_params=None, parallel_on=True):
         self.z = z
         self.closeData = closeData
         self.momenta = momenta
@@ -52,6 +89,7 @@ class Longshort:
         self.weighting_params = weighting_params if weighting_params else {}
         self.filter_func = filter_func
         self.filter_params = filter_params if filter_params else {}
+        self.parallel = parallel_on
 
     def preSmooth(self,z_pre:pd.DataFrame)->pd.DataFrame:
         """ Handles pre-smoothing of data."""
@@ -64,17 +102,7 @@ class Longshort:
         else:
             return z_pre.dropna() # Return raw data if no pre-smoothing applied
 
-    def filterWeight(self,z_pre:pd.DataFrame,prefiltered:pd.DataFrame,**kwargs)->pd.DataFrame:
-        if self.filter_func=='TopMag':
-            top = self.filter_params.get('top',5)
-            return filters.filter(z_pre,prefiltered).filterFunction('TopMag',top=top)
-        if self.filter_func=='vol':
-            window = self.filter_params.get('window',40)
-            top = self.filter_params.get('top',5)
-            high = self.filter_params.get('high',False)
-            priceData = self.filter_params.get('price')
 
-            return filters.filter(z_pre,prefiltered).filterFunction('vol',priceData=priceData,window=window,top=top,high=high)
 
     def zpThresh(self, period:int=1,threshold:float=1.0)->pd.DataFrame:
         '''zpThresh strategy trades based on the selected p-period momentum being above a threshold. It takes the
@@ -95,23 +123,29 @@ class Longshort:
 
         # Simulate trade by iterating through days from end of training onwards
         T = zp.iloc[self.train_window:,:].index # Get out of sample time steps to iterate through
-        for t in T:
-            print('t = {}, T = {}'.format(t,T[-1]))
-            # Iterate through stock series and get fitted models
-            for c in zp.columns:
-                model = models[c] # Retrieve fitted model
-                model.update(zp.loc[t,c]) # Update model with current observation
-                m = model.predict(n_periods=1, return_conf_int=True) # Forecast 1 step ahead
-                forecast, conf =  m[0][0], m[1][0]  # Get forcast and conf intervals (not used currently)
-                z_forecast.loc[t,c]= forecast # Save forecast
-                z_conf.loc[t,c] = conf
+
+        if self.parallel:
+            z_forecast = parallel_stock_forecasts(models, zp, T, z_forecast)
+        else:
+            for t in T:
+                print('t = {}, T = {}'.format(t,T[-1]))
+                # Iterate through stock series and get fitted models
+                for c in zp.columns:
+                    model = models[c] # Retrieve fitted model
+                    model.update(zp.loc[t,c]) # Update model with current observation
+                    m = model.predict(n_periods=1, return_conf_int=True) # Forecast 1 step ahead
+                    forecast, conf =  m[0][0], m[1][0]  # Get forcast and conf intervals (not used currently)
+                    z_forecast.loc[t,c]= forecast # Save forecast
+                    z_conf.loc[t,c] = conf
 
         plotting.plotForecast(zp.shift(-1),z_forecast) # Call plotting function to randomly select a stock and plot
         # its observed and forecasted z score. Observed z scores need to be shifted to align with forecast dataframe
+        plotting.plotzThresh(z_forecast.shift(-1),threshold) # Plot z scores that are above the threshold
 
         # This strategy activates trading signals when the z-score is forecasted to be above a threshold
         prefiltered = (z_forecast.abs()>threshold).astype(int) # Activate signals according to trading logic
-        unweighted = self.filterWeight(zp,prefiltered)
+
+        unweighted = filters.filter(zp,prefiltered).filterFunction(self.filter_func,self.filter_params)
         # Weight signals according to selected weighting
         weighted = (weighting.signalWeighter(unweighted=unweighted, z=zp,momenta=self.momenta.loc[period,'momentum']).
                     getWeightedSignal(self.weighting_func, self.weighting_params))
@@ -119,6 +153,8 @@ class Longshort:
         rebalancedSignal = Rebalance(weighted,self.rebalancePeriod) # Rebalance signal according to desired frequency
 
         getMetrics(rebalancedSignal,self.closeData,self.rebalancePeriod)
+        print('Rebalanced Signal')
+        print(rebalancedSignal)
 
         return rebalancedSignal
 
@@ -132,9 +168,8 @@ class Longshort:
         zfast.name = 'z-fast'
 
         # Train initial ARIMA models for fast and slow momenta
-        fastmodels = ARIMA.trainARIMA(zfast, self.train_window,
-                                  d_alpha=self.alpha)  # time-series keyed dictionary of ARIMA models
-        slowmodels = ARIMA.trainARIMA(zslow, self.train_window,)
+        fastmodels = ARIMA.trainARIMA(zfast, self.train_window,d_alpha=self.alpha)
+        slowmodels = ARIMA.trainARIMA(zslow, self.train_window,d_alpha=self.alpha)
 
         # Initialise forecast dataframes
         zfast_forecast = pd.DataFrame(index=zfast.index[self.train_window:], columns=zfast.columns)
@@ -143,27 +178,34 @@ class Longshort:
         zslow_forecast.name='zslow-forecast'
 
         T = zslow.iloc[self.train_window:, :].index  # Get out of sample time steps to iterate through
-        # Simulate trade by iterating through days from end of training onwards
-        for t in T:
-            print('t = {}, T = {}'.format(t,T[-1]))
-            # Iterate through stock series and get fitted models
-            for c in zfast.columns:
-                fastmodel = fastmodels[c]
-                slowmodel = slowmodels[c]
 
-                # Update models with current observation
-                fastmodel.update(zfast.loc[t, c])
-                slowmodel.update(zslow.loc[t, c])
+        if self.parallel:
+            zfast_forecast = parallel_stock_forecasts(fastmodels,zfast,T,zfast_forecast)
+            zslow_forecast = parallel_stock_forecasts(slowmodels,zslow,T,zslow_forecast)
+        else:
 
-                # Get step ahead forecasts
-                mfast = fastmodel.predict(n_periods=1, return_conf_int=True)
-                mslow = slowmodel.predict(n_periods=1, return_conf_int=True)
-                fastforecast, conf = mfast[0][0], mfast[1][0]
-                slowforecast, slowconf = mslow[0][0], mslow[1][0]
 
-                # Store forecasts
-                zfast_forecast.loc[t, c] = fastforecast
-                zslow_forecast.loc[t, c] = slowforecast
+            # Simulate trade by iterating through days from end of training onwards
+            for t in T:
+                print('t = {}, T = {}'.format(t,T[-1]))
+                # Iterate through stock series and get fitted models
+                for c in zfast.columns:
+                    fastmodel = fastmodels[c]
+                    slowmodel = slowmodels[c]
+
+                    # Update models with current observation
+                    fastmodel.update(zfast.loc[t, c])
+                    slowmodel.update(zslow.loc[t, c])
+
+                    # Get step ahead forecasts
+                    mfast = fastmodel.predict(n_periods=1, return_conf_int=True)
+                    mslow = slowmodel.predict(n_periods=1, return_conf_int=True)
+                    fastforecast, conf = mfast[0][0], mfast[1][0]
+                    slowforecast, slowconf = mslow[0][0], mslow[1][0]
+
+                    # Store forecasts
+                    zfast_forecast.loc[t, c] = fastforecast
+                    zslow_forecast.loc[t, c] = slowforecast
 
         plotting.plotForecast(zfast.shift(-1), zfast_forecast)
         plotting.plotForecast(zslow.shift(-1), zslow_forecast)
@@ -198,3 +240,4 @@ def getMetrics(signal,priceData,rebalance):
     print('Sharpe Ratio ', Sharpe)
 
     plt.show()
+

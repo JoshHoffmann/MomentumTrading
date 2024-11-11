@@ -3,7 +3,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sea
 
-def plotReturns(returns):
+
+def plotMomenta(momenta:pd.DataFrame,periods:list[int]):
+    for p in periods:
+        momenta.loc[p,'momentum'].plot()
+        plt.xlabel('Time')
+        plt.ylabel('Momentum')
+        plt.title('{}-Period Momentum'.format(p))
+        plt.show()
+def plotZScores(zscores:pd.DataFrame,periods:list[int]):
+    for p in periods:
+        zscores.loc[p, 'z'].plot()
+        plt.xlabel('Time')
+        plt.ylabel('z')
+        plt.title('{}-Period Z-Score'.format(p))
+        plt.show()
+
+def plotReturns(returns:pd.DataFrame):
 
     plt.figure()
     returns.plot()
@@ -13,7 +29,7 @@ def plotReturns(returns):
     plt.show()
 
 
-def plotReturnsHist(returns):
+def plotReturnsHist(returns:pd.DataFrame):
     mean  = returns.mean()
     plt.figure(figsize=(10, 6))
 
@@ -26,7 +42,7 @@ def plotReturnsHist(returns):
     plt.legend()
     plt.show()
 
-def plotCumulative(cumulative):
+def plotCumulative(cumulative:pd.DataFrame):
     plt.figure()
     cumulative.plot()
     plt.xlabel('Time')
@@ -45,4 +61,13 @@ def plotForecast(obs:pd.DataFrame,forecast:pd.DataFrame,n=1):
     plt.legend()
     plt.show()
 
+def plotzThresh(z:pd.DataFrame,threshold:float):
+    zthresh = z.loc[:,(z.dropna().abs()>threshold).any()]
+    zthresh.plot()
+    plt.axhline(y=threshold, color='r', linestyle='--', label=f'+{threshold}')
+    plt.axhline(y=-threshold, color='r', linestyle='--', label=f'-{threshold}')
+    plt.xlabel('Time')
+    plt.ylabel('z-score')
+    plt.legend()
+    plt.show()
 
