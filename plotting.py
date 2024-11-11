@@ -71,3 +71,24 @@ def plotzThresh(z:pd.DataFrame,threshold:float):
     plt.legend()
     plt.show()
 
+
+def PlotSharpeSurface2Param(param_names, Sharpe_master):
+    '''Plots Sharpe ratio surface when two parameters are being swept over. Takes param names,
+    sharpe mater data frame, rebalancing period and doing.'''
+    X = Sharpe_master.index
+    Y = Sharpe_master.columns
+    Z = Sharpe_master.values
+    X, Y = np.meshgrid(Y,X)
+    Z = Z.T
+    fig = plt.figure(figsize=(10, 7))
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.plot_surface(X, Y, Z, cmap='viridis')
+
+    ax.set_xlabel('{} '.format(param_names[0]))
+    ax.set_ylabel('{} '.format(param_names[1]))
+    ax.set_zlabel('Sharpe Ratio')
+    plt.tight_layout()
+    ax.set_box_aspect(None, zoom=0.85)
+
+    plt.show()

@@ -4,13 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9d10173f-5ae1-43ce-b17e-e5f27a5d1d3b" name="Changes" comment="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter&#10;Added option for using pmdarima built in multithreading&#10;Added plotting functions to plot all momenta and zscore periods">
+    <list default="true" id="9d10173f-5ae1-43ce-b17e-e5f27a5d1d3b" name="Changes" comment="Rebalancing of returns so that they align with portfolio rebalancing&#10;Added crossOver strategy">
+      <change beforePath="$PROJECT_DIR$/.idea/Momentum Trading.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Momentum Trading.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backtest.py" beforeDir="false" afterPath="$PROJECT_DIR$/backtest.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/filters.py" beforeDir="false" afterPath="$PROJECT_DIR$/filters.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/metrics.py" beforeDir="false" afterPath="$PROJECT_DIR$/metrics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/weighting.py" beforeDir="false" afterPath="$PROJECT_DIR$/weighting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotting.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +48,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/JoshHoffmann/MomentumTrading.git&quot;,
-    &quot;accountId&quot;: &quot;4aac57ab-397e-4855-a1ef-391e2429710b&quot;
+    &quot;accountId&quot;: &quot;bc1c4b72-fff3-467e-806c-758d15bf567a&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -131,8 +132,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23339.19" />
-        <option value="bundled-python-sdk-0029f7779945-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23339.19" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
+        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
       </set>
     </attachedChunks>
   </component>
@@ -160,9 +161,8 @@
       <workItem from="1731016981308" duration="715000" />
       <workItem from="1731065600670" duration="1495000" />
       <workItem from="1731074986042" duration="9819000" />
-      <workItem from="1731105834882" duration="5487000" />
-      <workItem from="1731132908046" duration="22241000" />
-      <workItem from="1731192395097" duration="39692000" />
+      <workItem from="1731353968733" duration="769000" />
+      <workItem from="1731357853289" duration="6205000" />
     </task>
     <task id="LOCAL-00001" summary="Switched to using pmdarima for determining arima model orders&#10;Added weighting module containing class to assign different weighting functions to activated trading signals">
       <option name="closed" value="true" />
@@ -212,43 +212,34 @@
       <option name="project" value="LOCAL" />
       <updated>1731007287606</updated>
     </task>
-    <task id="LOCAL-00007" summary="Final returns correction">
-      <option name="closed" value="true" />
-      <created>1731114164638</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1731114164638</updated>
-    </task>
-    <task id="LOCAL-00008" summary="FINAL correction to returns calculation">
-      <option name="closed" value="true" />
-      <created>1731158548201</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1731158548201</updated>
-    </task>
-    <task id="LOCAL-00009" summary="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter">
-      <option name="closed" value="true" />
-      <created>1731172843801</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1731172843801</updated>
-    </task>
-    <task id="LOCAL-00010" summary="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter&#10;Added option for using pmdarima built in multithreading&#10;Added plotting functions to plot all momenta and zscore periods">
-      <option name="closed" value="true" />
-      <created>1731284534748</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1731284534748</updated>
-    </task>
-    <option name="localTasksCounter" value="11" />
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="master" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Switched to using pmdarima for determining arima model orders&#10;Added weighting module containing class to assign different weighting functions to activated trading signals" />
@@ -257,16 +248,11 @@
     <MESSAGE value="Added some docstrings&#10;and general cleaning" />
     <MESSAGE value="Added plotting for returns distribution" />
     <MESSAGE value="cleaning" />
-    <MESSAGE value="Final returns correction" />
-    <MESSAGE value="FINAL correction to returns calculation" />
-    <MESSAGE value="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter" />
-    <MESSAGE value="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter&#10;Added option for using pmdarima built in multithreading&#10;Added plotting functions to plot all momenta and zscore periods" />
-    <option name="LAST_COMMIT_MESSAGE" value="Moved metrics retrieval to function inside backtest module&#10;fixed issue with passing parameters into filter&#10;Added option for using pmdarima built in multithreading&#10;Added plotting functions to plot all momenta and zscore periods" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleaning" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/main_py$main.coverage" NAME="main Coverage Results" MODIFIED="1731105258541" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/main_py$main.coverage" NAME="main Coverage Results" MODIFIED="1731361919904" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Momentum_Trading$main.coverage" NAME="main Coverage Results" MODIFIED="1730839190382" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/MomentumTrading2$main.coverage" NAME="main Coverage Results" MODIFIED="1731329859619" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Momentum_Trading$momenta.coverage" NAME="momenta Coverage Results" MODIFIED="1730760197802" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

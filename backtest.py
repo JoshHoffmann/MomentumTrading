@@ -91,22 +91,34 @@ class Longshort:
         self.filter_params = filter_params if filter_params else {}
         self.parallel = parallel_on
 
-    def preSmooth(self,z_pre:pd.DataFrame)->pd.DataFrame:
-        """ Handles pre-smoothing of data."""
-        if self.pre_smoothing == 'MA':
-            window = self.pre_smooth_params.get('window',5) # window defaults to 5
-            return z_pre.rolling(window).mean().dropna()
-        elif self.pre_smoothing == 'EWM':
-            span = self.pre_smooth_params.get('span',3) # span defaults to 3
-            return z_pre.ewm(span).mean().dropna()
-        else:
-            return z_pre.dropna() # Return raw data if no pre-smoothing applied
 
-
-
-    def zpThresh(self, period:int=1,threshold:float=1.0)->pd.DataFrame:
+    def zpThresh(self, period:int=1,threshold:float=1.0,sweep=False,period_space=None,thresh_space=None)->pd.DataFrame:
         '''zpThresh strategy trades based on the selected p-period momentum being above a threshold. It takes the
          selected momentum period (this must be one of the periods already calculated) and the desired threshold. '''
+
+
+        def getSignal(z_forecast:pd.DataFrame,period:int,threshold:float):
+            # This strategy activates trading signals when the z-score is forecasted to be above a threshold
+            prefiltered = (z_forecast.abs() > threshold).astype(int)  # Activate signals according to trading logic
+
+            unweighted = filters.filter(zp, prefiltered).filterFunction(self.filter_func, self.filter_params)
+            # Weight signals according to selected weighting
+            weighted = (
+                weighting.signalWeighter(unweighted=unweighted, z=zp, momenta=self.momenta.loc[period, 'momentum'],
+                                         priceData=self.closeData).
+                getWeightedSignal(self.weighting_func, self.weighting_params))
+
+            rebalancedSignal = Rebalance(weighted,
+                                         self.rebalancePeriod)  # Rebalance signal according to desired frequency
+
+            getMetrics(rebalancedSignal, self.closeData, self.rebalancePeriod)
+
+            name = 'zpThresh ({},{}) - {}({}) - {}({}) -{}({})'.format(period, threshold, self.pre_smoothing,
+                                                                       str(self.pre_smooth_params), self.weighting_func,
+                                                                       str(self.weighting_params), self.filter_func,
+                                                                       str(self.filter_params))
+            print(name)
+            return rebalancedSignal
 
         zp = self.preSmooth(self.z.loc[period,'z']) # Get desired momentum period
         zp.name = 'z{}'.format(period)
@@ -142,25 +154,30 @@ class Longshort:
         # its observed and forecasted z score. Observed z scores need to be shifted to align with forecast dataframe
         plotting.plotzThresh(z_forecast.shift(-1),threshold) # Plot z scores that are above the threshold
 
-        # This strategy activates trading signals when the z-score is forecasted to be above a threshold
-        prefiltered = (z_forecast.abs()>threshold).astype(int) # Activate signals according to trading logic
+        if not sweep:
+            signal = getSignal(z_forecast,period,threshold)
+            return signal
 
-        unweighted = filters.filter(zp,prefiltered).filterFunction(self.filter_func,self.filter_params)
-        # Weight signals according to selected weighting
-        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zp,momenta=self.momenta.loc[period,'momentum']).
-                    getWeightedSignal(self.weighting_func, self.weighting_params))
+        else:
+           signals = pd.DataFrame(index=period_space, columns=thresh_space)
+           returns = pd.DataFrame(index=period_space, columns=thresh_space)
+           cumulative = pd.DataFrame(index=period_space, columns=thresh_space)
+           sharpe = pd.DataFrame(index=period_space, columns=thresh_space)
+           for p in period_space:
+               for t in thresh_space:
+                   sweep_signal = getSignal(z_forecast,period=p,threshold=t)
+                   signals.at[p,t] = sweep_signal
+                   sweep_returns = metrics.Returns(self.closeData,sweep_signal,self.rebalancePeriod)
+                   returns.at[p,t] = sweep_returns
+                   sweep_cumulative = metrics.CumulativeReturns(self.closeData,sweep_signal,self.rebalancePeriod)
+                   cumulative.at[p,t] = sweep_cumulative
+                   sweep_sharpe = metrics.Sharpe(self.closeData,sweep_signal,self.rebalancePeriod)
+                   sharpe.at[p,t] = sweep_sharpe
 
-        rebalancedSignal = Rebalance(weighted,self.rebalancePeriod) # Rebalance signal according to desired frequency
+           plotting.PlotSharpeSurface2Param(['period','threshold'],sharpe)
+           return signals, returns, cumulative,sharpe
 
-        getMetrics(rebalancedSignal,self.closeData,self.rebalancePeriod)
 
-        name = 'zpThresh ({},{}) - {}({}) - {}({}) -{}({})'.format(period,threshold,self.pre_smoothing,
-                                                           str(self.pre_smooth_params),self.weighting_func,
-                                                           str(self.weighting_params), self.filter_func,
-                                                                   str(self.filter_params))
-        print(name)
-
-        return rebalancedSignal
 
     def CrossOver(self,fast:int,slow:int)->pd.DataFrame:
         """ CrossOver strategy trades based on the selected fast momentum is forecasted to cross the selected slow
@@ -214,7 +231,7 @@ class Longshort:
         # This strategy activates trading signals when the zfast>zslow
         prefiltered = (zfast_forecast.abs() > zslow_forecast.abs()).astype(int)
         unweighted = filters.filter(zfast,prefiltered).filterFunction(self.filter_func,self.filter_params)
-        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'])
+        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'],priceData=self.closeData)
                     .getWeightedSignal(self.weighting_func,self.weighting_params))
         rebalancedSignal = Rebalance(weighted, self.rebalancePeriod)
 
@@ -226,6 +243,19 @@ class Longshort:
             return self.zpThresh(**kwargs)
         elif strategy == 'CrossOver':
             return self.CrossOver(**kwargs)
+
+    def preSmooth(self,z_pre:pd.DataFrame)->pd.DataFrame:
+        """ Handles pre-smoothing of data."""
+        if self.pre_smoothing == 'MA':
+            window = self.pre_smooth_params.get('window',5) # window defaults to 5
+            return z_pre.rolling(window).mean().dropna()
+        elif self.pre_smoothing == 'EWM':
+            span = self.pre_smooth_params.get('span',3) # span defaults to 3
+            return z_pre.ewm(span).mean().dropna()
+        else:
+            return z_pre.dropna() # Return raw data if no pre-smoothing applied
+
+
 
 
 def getMetrics(signal:pd.DataFrame,priceData:pd.DataFrame,rebalance:str):
