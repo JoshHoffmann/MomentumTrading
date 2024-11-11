@@ -10,7 +10,7 @@ import plotting
 closeData = pd.read_csv('2020-2024_Data.csv', index_col='date')
 closeData.index = pd.to_datetime(closeData.index)
 
-closeData = closeData.iloc[0:320,0:99] # Choose sub set for testing
+closeData = closeData.iloc[0:320,0:349] # Choose sub set for testing
 
 periods = [1,3,6] # Define Momenta periods (months)
 
@@ -20,31 +20,12 @@ zscores = momenta.getZScores(Momenta) # Get cross-sectional z-scores for all mom
 
 plotting.plotZScores(zscores,periods)
 
-'''signal1 = (backtest.Longshort(zscores,closeData,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
-                              pre_smooth_params={'window':3},weighting_func='linear',weighting_params={'beta':1},
+signal1 = (backtest.Longshort(zscores,closeData,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
+                              pre_smooth_params={'window':4},weighting_func='volAdjust',weighting_params={'priceData':closeData,'window':30},
                                 filter_func='TopMag', filter_params={'top':10}).
-           strategy(strategy='zpThresh',period=1,threshold=4))
+           strategy(strategy='zpThresh',period=1,threshold=5))
 
 signal1.plot() # Plot trading signal
-plt.title('zpThresh(4) - MA(3) - linear - TopMag(10)')
-plt.show()'''
-
-signal2 = (backtest.Longshort(zscores,closeData,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
-                              pre_smooth_params={'window':3},weighting_func='linear',weighting_params={'beta':1},
-                                filter_func='TopMag', filter_params={'top':5}).
-           strategy(strategy='zpThresh',period=1,threshold=4))
-
-signal2.plot() # Plot trading signal
-plt.title('zpThresh(4) - MA(3) - linear - TopMag(5)')
-plt.show()
-
-signal3 = (backtest.Longshort(zscores,closeData,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
-                              pre_smooth_params={'window':3},weighting_func='linear',weighting_params={'beta':1},
-                                filter_func='TopMag', filter_params={'top':1}).
-           strategy(strategy='zpThresh',period=1,threshold=4))
-
-signal3.plot() # Plot trading signal
-plt.title('zpThresh(4) - MA(3) - linear - TopMag(5)')
 plt.show()
 
 

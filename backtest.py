@@ -153,8 +153,12 @@ class Longshort:
         rebalancedSignal = Rebalance(weighted,self.rebalancePeriod) # Rebalance signal according to desired frequency
 
         getMetrics(rebalancedSignal,self.closeData,self.rebalancePeriod)
-        print('Rebalanced Signal')
-        print(rebalancedSignal)
+
+        name = 'zpThresh ({},{}) - {}({}) - {}({}) -{}({})'.format(period,threshold,self.pre_smoothing,
+                                                           str(self.pre_smooth_params),self.weighting_func,
+                                                           str(self.weighting_params), self.filter_func,
+                                                                   str(self.filter_params))
+        print(name)
 
         return rebalancedSignal
 
@@ -183,8 +187,6 @@ class Longshort:
             zfast_forecast = parallel_stock_forecasts(fastmodels,zfast,T,zfast_forecast)
             zslow_forecast = parallel_stock_forecasts(slowmodels,zslow,T,zslow_forecast)
         else:
-
-
             # Simulate trade by iterating through days from end of training onwards
             for t in T:
                 print('t = {}, T = {}'.format(t,T[-1]))
@@ -226,7 +228,7 @@ class Longshort:
             return self.CrossOver(**kwargs)
 
 
-def getMetrics(signal,priceData,rebalance):
+def getMetrics(signal:pd.DataFrame,priceData:pd.DataFrame,rebalance:str):
     # Get metrics
     returns = metrics.Returns(priceData, signal, rebalance)
     print('RETURNS')
@@ -238,6 +240,8 @@ def getMetrics(signal,priceData,rebalance):
     print(cumulative)
     Sharpe = metrics.Sharpe(priceData, signal, rebalance)
     print('Sharpe Ratio ', Sharpe)
+    maxdrawdown = metrics.maxdrawdown(cumulative)
+    print('Maximum drawdown ', maxdrawdown)
 
     plt.show()
 

@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 import plotting
-'''pd.set_option('display.max_rows', None)  # Show all rows
-pd.set_option('display.max_columns', None)'''
+
 
 def RebalanceReturns(priceData:pd.DataFrame, rebalancePeriod:str):
 
@@ -22,8 +21,6 @@ def Returns(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod:str):
     pct = price_rebalance.pct_change().fillna(0)
     print('PCT')
     print(pct.head())
-    print('SIGNAL SLICED')
-    print(signal.loc[rebalancePoints].head())
     returns = (pct* signal.loc[rebalancePoints]).sum(axis=1)
 
     return returns
@@ -40,3 +37,12 @@ def Sharpe(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod)->float:
     Sharpe = np.round(returns.mean(axis=0) / returns.std(axis=0), 2)
     return Sharpe
 
+def maxdrawdown(cumulativeReturns:pd.DataFrame):
+    max_point = cumulativeReturns.cummax()  # Peak of cumulative returns for calculating drawdown
+
+    drawdown = (cumulativeReturns - max_point) / max_point
+    # If peak is zero, we can get a division by zero error in calculation. Set drawdown equal to zero where this happens
+    drawdown[drawdown == -np.inf] = 0
+    max_draw_down = np.round(drawdown.min(), 2)
+
+    return max_draw_down

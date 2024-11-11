@@ -11,10 +11,12 @@ class signalWeighter:
     def linear(self,beta):
         """Weight signals linearly in proportion to their z-score"""
         print('BETA = ', beta)
-        momenta_sign = self.momenta.apply(np.sign)
+        I = self.unweighted.index
+        momenta_sign = self.momenta.loc[I,:].apply(np.sign)
+
         weighted = beta*self.unweighted*self.z.abs()*momenta_sign
         # normalise
-        weighted.div(weighted.abs().sum(axis=1), axis=0).apply(np.round)
+        weighted = weighted.div(weighted.abs().sum(axis=1), axis=0)
         return weighted
     def softmax(self,beta:float=1.0):
         print('BETA = ', beta)
@@ -24,6 +26,14 @@ class signalWeighter:
 
         return weighted
 
+    def volAdjust(self,priceData:pd.DataFrame,window:int):
+        I = self.unweighted.index
+        momenta_sign = self.momenta.loc[I, :].apply(np.sign)
+        vol = priceData.pct_change().loc[I,:].rolling(window=window).std()
+        weighted = self.unweighted*self.z.abs()*momenta_sign/vol
+        weighted = weighted.div(weighted.abs().sum(axis=1), axis=0)
+        return weighted
+
     def getWeightedSignal(self, function, params):
         if function == 'linear':
             beta = params.get('beta',1)
@@ -31,3 +41,7 @@ class signalWeighter:
         elif function == 'softmax':
             beta = params.get('beta',1)
             return self.softmax(beta)
+        elif function == 'volAdjust':
+            priceData = params.get('priceData')
+            window = params.get('window',33)
+            return self.volAdjust(priceData,window)

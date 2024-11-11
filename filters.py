@@ -13,10 +13,11 @@ class filter:
     def TopMag(self,params):
         top = params.get('top',5)
         print('top = ', top)
+
         for index, row in self.z.iterrows():
             ranked = row.abs().sort_values(ascending=False)  # At each datetime, rank in descending by |z|
             selectedTickers = ranked.head(top).index.tolist()  # Select top stocks, tuned by 'top' parameter
-            self.unweighted.loc[index, (~self.unweighted.columns.isin(selectedTickers))] = 0
+            self.unweighted.loc[index, :] = self.unweighted.columns.isin(selectedTickers).astype(int)
         return self.unweighted
 
     def vol(self,params):
