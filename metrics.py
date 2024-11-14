@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import plotting
 
+#TODO: Sharpe and MDD plot for param sweep?
 
 def RebalanceReturns(priceData:pd.DataFrame, rebalancePeriod:str):
 
@@ -19,8 +20,6 @@ def Returns(priceData:pd.DataFrame,signal:pd.DataFrame,rebalancePeriod:str):
     rebalancePoints = RebalanceReturns(signal,rebalancePeriod)
     price_rebalance = priceData.loc[rebalancePoints]
     pct = price_rebalance.pct_change().fillna(0)
-    print('PCT')
-    print(pct.head())
     returns = (pct* signal.loc[rebalancePoints]).sum(axis=1)
 
     return returns

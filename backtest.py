@@ -1,3 +1,4 @@
+
 """ Handles Backtesting of strategies."""
 
 import ARIMA
@@ -34,16 +35,13 @@ def Rebalance(w:pd.DataFrame, rebalancePeriod:str)->pd.DataFrame:
 def forecast_stock(stock, zp, models, T):
     """Sequentially update and forecast for each stock in its own process."""
     forecasts = []
-    end = T[-1]
     for t in T:
-        #print('t = {}, T = {}'.format(t,end))
         model = models[stock]
         # Update model with latest data point for the stock
         model.update(zp.loc[t, stock])
 
         # Forecast the next time step
         forecast = model.predict(n_periods=1)
-
         # Append forecast value for (t, stock) to the results list
         forecasts.append((t, forecast[0]))  # Check here if forecast needs [0] or just `forecast`
     return stock, forecasts
@@ -91,21 +89,67 @@ class Longshort:
         self.filter_params = filter_params if filter_params else {}
         self.parallel = parallel_on
 
+    def preSmooth(self,z_pre:pd.DataFrame)->pd.DataFrame:
+        """ Handles pre-smoothing of data."""
+        if self.pre_smoothing == 'MA':
+            window = self.pre_smooth_params.get('window',5) # window defaults to 5
+            return z_pre.rolling(window).mean().dropna()
+        elif self.pre_smoothing == 'EWM':
+            span = self.pre_smooth_params.get('span',3) # span defaults to 3
+            return z_pre.ewm(span).mean().dropna()
+        else:
+            return z_pre.dropna() # Return raw data if no pre-smoothing applied
 
-    def zpThresh(self, period:int=1,threshold:float=1.0,sweep=False,period_space=None,thresh_space=None)->pd.DataFrame:
+
+
+    def zpThresh(self, period:int=1,threshold:float=1.0, sweep=False,period_space=None,thresh_space=None)->pd.DataFrame:
         '''zpThresh strategy trades based on the selected p-period momentum being above a threshold. It takes the
          selected momentum period (this must be one of the periods already calculated) and the desired threshold. '''
 
+        def getZPForecast(period,zp):
 
-        def getSignal(z_forecast:pd.DataFrame,period:int,threshold:float):
+            # Train ARIMA models on initial data
+            models = ARIMA.trainARIMA(zp, self.train_window, d_alpha=self.alpha)
+            # Initialise forecasts of z_p momentum
+            # Important note here: z_forecast[t] will contain the forecast for the NEXT day i.e. what the z-score will be
+            # at t+1 day ahead. The reason for this is to make activating the trading signal a bit easier which can be seen
+            # below
+            z_forecast = pd.DataFrame(index=zp.index[self.train_window:], columns=zp.columns)
+            z_forecast.name = 'z{} forecast'.format(period)
+            z_conf = pd.DataFrame(index=zp.index[self.train_window:], columns=zp.columns)
+
+            # Iterating through days from end of training onwards
+            T = zp.iloc[self.train_window:, :].index  # Get out of sample time steps to iterate through
+
+            if self.parallel:
+                # Parallelise if selected
+                z_forecast = parallel_stock_forecasts(models, zp, T, z_forecast) # Dataframe of one-step ahead forecasts
+            else:
+                # Sequential
+                for t in T:
+                    print('t = {}, T = {}'.format(t, T[-1]))
+                    # Iterate through stock series and get fitted models
+                    for c in zp.columns:
+                        model = models[c]  # Retrieve fitted model
+                        model.update(zp.loc[t, c])  # Update model with current observation
+                        m = model.predict(n_periods=1, return_conf_int=True)  # Forecast 1 step ahead
+                        forecast, conf = m[0][0], m[1][0]  # Get forcast and conf intervals (not used currently)
+                        z_forecast.loc[t, c] = forecast  # Save forecast
+                        z_conf.loc[t, c] = conf
+
+            plotting.plotForecast(zp.shift(-1),z_forecast)  # Call plotting function to randomly select a stock and plot
+            # its observed and forecasted z score. Observed z scores need to be shifted to align with forecast dataframe
+            return z_forecast
+
+
+        def getSignal(z_forecast,zp,threshold,priceData):
             # This strategy activates trading signals when the z-score is forecasted to be above a threshold
             prefiltered = (z_forecast.abs() > threshold).astype(int)  # Activate signals according to trading logic
 
             unweighted = filters.filter(zp, prefiltered).filterFunction(self.filter_func, self.filter_params)
             # Weight signals according to selected weighting
             weighted = (
-                weighting.signalWeighter(unweighted=unweighted, z=zp, momenta=self.momenta.loc[period, 'momentum'],
-                                         priceData=self.closeData).
+                weighting.signalWeighter(unweighted=unweighted, z=zp, momenta=self.momenta.loc[period, 'momentum'],priceData=priceData).
                 getWeightedSignal(self.weighting_func, self.weighting_params))
 
             rebalancedSignal = Rebalance(weighted,
@@ -118,65 +162,45 @@ class Longshort:
                                                                        str(self.weighting_params), self.filter_func,
                                                                        str(self.filter_params))
             print(name)
+
             return rebalancedSignal
 
-        zp = self.preSmooth(self.z.loc[period,'z']) # Get desired momentum period
-        zp.name = 'z{}'.format(period)
-
-        # Train ARIMA models on initial data
-        models = ARIMA.trainARIMA(zp,self.train_window,d_alpha=self.alpha)
-        # Initialise forecasts of z_p momentum
-        # Important note here: z_forecast[t] will contain the forecast for the NEXT day i.e. what the z-score will be
-        # at t+1 day ahead. The reason for this is to make activating the trading signal a bit easier which can be seen
-        # below
-        z_forecast = pd.DataFrame(index=zp.index[self.train_window:], columns=zp.columns)
-        z_forecast.name = 'z{} forecast'.format(period)
-        z_conf = pd.DataFrame(index=zp.index[self.train_window:], columns=zp.columns)
-
-        # Simulate trade by iterating through days from end of training onwards
-        T = zp.iloc[self.train_window:,:].index # Get out of sample time steps to iterate through
-
-        if self.parallel:
-            z_forecast = parallel_stock_forecasts(models, zp, T, z_forecast)
-        else:
-            for t in T:
-                print('t = {}, T = {}'.format(t,T[-1]))
-                # Iterate through stock series and get fitted models
-                for c in zp.columns:
-                    model = models[c] # Retrieve fitted model
-                    model.update(zp.loc[t,c]) # Update model with current observation
-                    m = model.predict(n_periods=1, return_conf_int=True) # Forecast 1 step ahead
-                    forecast, conf =  m[0][0], m[1][0]  # Get forcast and conf intervals (not used currently)
-                    z_forecast.loc[t,c]= forecast # Save forecast
-                    z_conf.loc[t,c] = conf
-
-        plotting.plotForecast(zp.shift(-1),z_forecast) # Call plotting function to randomly select a stock and plot
-        # its observed and forecasted z score. Observed z scores need to be shifted to align with forecast dataframe
-        plotting.plotzThresh(z_forecast.shift(-1),threshold) # Plot z scores that are above the threshold
-
         if not sweep:
-            signal = getSignal(z_forecast,period,threshold)
+            zp = self.preSmooth(self.z.loc[period, 'z']) # Get the period-momentum
+            zp.name = 'z{}'.format(period)
+            z_forecast = getZPForecast(period,zp) # Get forecasts of this momentum, should return a dataframe of the 1-step
+            # ahead forecasts
+            signal = getSignal(z_forecast,zp,threshold,self.closeData) # Signal is generated from these forecasts and threshold
+            signal.plot()
+            plt.show()
+            getMetrics(signal, self.closeData, self.rebalancePeriod)
             return signal
 
         else:
-           signals = pd.DataFrame(index=period_space, columns=thresh_space)
-           returns = pd.DataFrame(index=period_space, columns=thresh_space)
-           cumulative = pd.DataFrame(index=period_space, columns=thresh_space)
-           sharpe = pd.DataFrame(index=period_space, columns=thresh_space)
-           for p in period_space:
-               for t in thresh_space:
-                   sweep_signal = getSignal(z_forecast,period=p,threshold=t)
-                   signals.at[p,t] = sweep_signal
-                   sweep_returns = metrics.Returns(self.closeData,sweep_signal,self.rebalancePeriod)
-                   returns.at[p,t] = sweep_returns
-                   sweep_cumulative = metrics.CumulativeReturns(self.closeData,sweep_signal,self.rebalancePeriod)
-                   cumulative.at[p,t] = sweep_cumulative
-                   sweep_sharpe = metrics.Sharpe(self.closeData,sweep_signal,self.rebalancePeriod)
-                   sharpe.at[p,t] = sweep_sharpe
-
-           plotting.PlotSharpeSurface2Param(['period','threshold'],sharpe)
-           return signals, returns, cumulative,sharpe
-
+            signals = pd.DataFrame(index = period_space,columns=thresh_space)
+            returns = pd.DataFrame(index = period_space,columns=thresh_space)
+            cumulative = pd.DataFrame(index = period_space,columns=thresh_space)
+            Sharpe = pd.DataFrame(index = period_space,columns=thresh_space)
+            # Get all p-period forecasts and store in dict
+            zp = {p:self.preSmooth(self.z.loc[p, 'z']) for p in period_space}
+            zp_forcast = {p: getZPForecast(p,zp[p]) for p in period_space}
+            for p in period_space:
+                for t in thresh_space:
+                    # Now get signals for all p-period forcast and threshold combinations
+                    sweep_signal = getSignal(zp_forcast[p],zp[p],threshold=t,priceData=self.closeData)
+                    signals.at[p,t] = sweep_signal
+                    sweep_signal.plot()
+                    plt.title('p = {}, t = {}'.format(p,t))
+                    plt.show()
+                    sweep_returns = metrics.Returns(self.closeData,sweep_signal,self.rebalancePeriod)
+                    returns.at[p,t] = sweep_returns
+                    sweep_cumlative = metrics.CumulativeReturns(self.closeData,sweep_signal,self.rebalancePeriod)
+                    cumulative.at[p,t] = sweep_cumlative
+                    sweep_Sharpe = metrics.Sharpe(self.closeData,sweep_signal,self.rebalancePeriod)
+                    Sharpe.at[p,t] = sweep_Sharpe
+            print(Sharpe)
+            plotting.PlotSharpeSurface2Param(['period','threshold'],Sharpe)
+            return signals, returns, cumulative, Sharpe
 
 
     def CrossOver(self,fast:int,slow:int)->pd.DataFrame:
@@ -231,7 +255,7 @@ class Longshort:
         # This strategy activates trading signals when the zfast>zslow
         prefiltered = (zfast_forecast.abs() > zslow_forecast.abs()).astype(int)
         unweighted = filters.filter(zfast,prefiltered).filterFunction(self.filter_func,self.filter_params)
-        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'],priceData=self.closeData)
+        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'])
                     .getWeightedSignal(self.weighting_func,self.weighting_params))
         rebalancedSignal = Rebalance(weighted, self.rebalancePeriod)
 
@@ -243,19 +267,6 @@ class Longshort:
             return self.zpThresh(**kwargs)
         elif strategy == 'CrossOver':
             return self.CrossOver(**kwargs)
-
-    def preSmooth(self,z_pre:pd.DataFrame)->pd.DataFrame:
-        """ Handles pre-smoothing of data."""
-        if self.pre_smoothing == 'MA':
-            window = self.pre_smooth_params.get('window',5) # window defaults to 5
-            return z_pre.rolling(window).mean().dropna()
-        elif self.pre_smoothing == 'EWM':
-            span = self.pre_smooth_params.get('span',3) # span defaults to 3
-            return z_pre.ewm(span).mean().dropna()
-        else:
-            return z_pre.dropna() # Return raw data if no pre-smoothing applied
-
-
 
 
 def getMetrics(signal:pd.DataFrame,priceData:pd.DataFrame,rebalance:str):
@@ -274,4 +285,3 @@ def getMetrics(signal:pd.DataFrame,priceData:pd.DataFrame,rebalance:str):
     print('Maximum drawdown ', maxdrawdown)
 
     plt.show()
-
