@@ -27,9 +27,10 @@ plotting.plotZScores(zscores,periods)
 
 
 
-signal2 = (backtest.Longshort(zscores,closeData,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
+
+'''signal2 = (backtest.Longshort(zscores,closeData,Momenta,200,alpha=0.01, rebalancePeriod='W',pre_smoothing='MA',
                               pre_smooth_params={'window':7},weighting_func='linear',weighting_params={'beta':1}).
-           strategy(strategy='zpThresh',period=6,threshold=0.1, sweep=True, period_space=[1,3,6],thresh_space=[1,2,3,4,5,6,7,8,9,10]))
+           strategy(strategy='zpThresh',period=6,threshold=0.1, sweep=True, period_space=[1,3,6],thresh_space=[1,2,3,4,5,6,7,8,9,10]))'''
 
 
 
