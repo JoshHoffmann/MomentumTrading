@@ -4,12 +4,14 @@ from pmdarima.arima import ndiffs
 from typing import List
 import warnings
 from joblib import Parallel, delayed
+import exog
 
 warnings.filterwarnings('ignore', 'Non-stationary starting autoregressive parameters found. Using zeros '
                                   'as starting parameters.')
 warnings.filterwarnings('ignore', 'Non-invertible starting MA parameters found. Using zeros as starting '
                                   'parameters.')
 warnings.filterwarnings('ignore', category=FutureWarning)
+
 
 
 def ARIMAd(z: pd.DataFrame, alpha: float, test:str='adf', max_d=6)->int:

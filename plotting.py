@@ -42,6 +42,19 @@ def plotReturnsHist(returns:pd.DataFrame):
     plt.title('Distribution of Strategy Returns')
     plt.legend()
     plt.show()
+def plotLogReturnsHist(returns:pd.DataFrame):
+    LogReturns = np.log(1+returns/returns.shift(1))
+    mean  = LogReturns.mean()
+    plt.figure(figsize=(10, 6))
+
+    sea.histplot(LogReturns, bins=60, color="skyblue", stat="density")
+    plt.axvline(mean, color='red', linestyle='--', label=f'Mean: {mean:.2f}')
+
+    plt.xlabel('Log Returns')
+    plt.ylabel('Density')
+    plt.title('Distribution of Strategy Log Returns')
+    plt.legend()
+    plt.show()
 
 def plotCumulative(cumulative:pd.DataFrame):
     plt.figure()
