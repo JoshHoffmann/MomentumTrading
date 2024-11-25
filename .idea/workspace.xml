@@ -4,18 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9d10173f-5ae1-43ce-b17e-e5f27a5d1d3b" name="Changes" comment="began  exog implementation">
-      <change beforePath="$PROJECT_DIR$/.idea/Momentum Trading.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Momentum Trading.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_18_11_2024_19_49__Changes_.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_18_11_2024_19_49__Changes_.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ARIMA.py" beforeDir="false" afterPath="$PROJECT_DIR$/ARIMA.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backtest.py" beforeDir="false" afterPath="$PROJECT_DIR$/backtest.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/exog.py" beforeDir="false" afterPath="$PROJECT_DIR$/exog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/filters.py" beforeDir="false" afterPath="$PROJECT_DIR$/filters.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotting.py" afterDir="false" />
-    </list>
+    <list default="true" id="9d10173f-5ae1-43ce-b17e-e5f27a5d1d3b" name="Changes" comment="requirement.txt added" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -48,12 +37,12 @@
     &quot;assignee&quot;: &quot;JoshHoffmann&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/JoshHoffmann/MomentumTrading.git&quot;,
-    &quot;accountId&quot;: &quot;bc1c4b72-fff3-467e-806c-758d15bf567a&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/JoshHoffmann/MomentumTrading.git",
+    "accountId": "2ba16a95-348b-4915-a45c-dee5d952fbae"
   }
-}</component>
+}]]></component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
@@ -252,7 +241,15 @@
       <option name="project" value="LOCAL" />
       <updated>1732009958438</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="requirement.txt added">
+      <option name="closed" value="true" />
+      <created>1732494663984</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1732494663984</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -289,6 +286,7 @@
     <MESSAGE value="Added plotting for returns distribution" />
     <MESSAGE value="cleaning" />
     <MESSAGE value="began  exog implementation" />
-    <option name="LAST_COMMIT_MESSAGE" value="began  exog implementation" />
+    <MESSAGE value="requirement.txt added" />
+    <option name="LAST_COMMIT_MESSAGE" value="requirement.txt added" />
   </component>
 </project>
