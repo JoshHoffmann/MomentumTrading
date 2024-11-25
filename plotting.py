@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sea
 from mpl_toolkits.mplot3d import Axes3D
 
+np.random.seed(10)
+
 
 def plotMomenta(momenta:pd.DataFrame,periods:list[int]):
     for p in periods:
@@ -11,14 +13,14 @@ def plotMomenta(momenta:pd.DataFrame,periods:list[int]):
         plt.xlabel('Time')
         plt.ylabel('Momentum')
         plt.title('{}-Period Momentum'.format(p))
-        plt.show()
+        #plt.show()
 def plotZScores(zscores:pd.DataFrame,periods:list[int]):
     for p in periods:
         zscores.loc[p, 'z'].plot()
         plt.xlabel('Time')
         plt.ylabel('z')
         plt.title('{}-Period Z-Score'.format(p))
-        plt.show()
+        #plt.show()
 
 def plotReturns(returns:pd.DataFrame):
 
@@ -27,7 +29,7 @@ def plotReturns(returns:pd.DataFrame):
     plt.xlabel('Time')
     plt.ylabel('Returns')
     plt.title('Strategy Returns')
-    plt.show()
+    #plt.show()
 
 
 def plotReturnsHist(returns:pd.DataFrame):
@@ -41,10 +43,10 @@ def plotReturnsHist(returns:pd.DataFrame):
     plt.ylabel('Density')
     plt.title('Distribution of Strategy Returns')
     plt.legend()
-    plt.show()
+    #plt.show()
 def plotLogReturnsHist(returns:pd.DataFrame):
-    LogReturns = np.log(1+returns/returns.shift(1))
-    mean  = LogReturns.mean()
+    LogReturns = (1+returns/returns.shift(1)).apply(np.log)
+    mean  = LogReturns.dropna().mean()
     plt.figure(figsize=(10, 6))
 
     sea.histplot(LogReturns, bins=60, color="skyblue", stat="density")
@@ -54,7 +56,7 @@ def plotLogReturnsHist(returns:pd.DataFrame):
     plt.ylabel('Density')
     plt.title('Distribution of Strategy Log Returns')
     plt.legend()
-    plt.show()
+    #plt.show()
 
 def plotCumulative(cumulative:pd.DataFrame):
     plt.figure()
@@ -62,18 +64,22 @@ def plotCumulative(cumulative:pd.DataFrame):
     plt.xlabel('Time')
     plt.ylabel('Cumulative Returns')
     plt.title('Strategy Cumulative Returns')
-    plt.show()
+    #plt.show()
 
 def plotForecast(obs:pd.DataFrame,forecast:pd.DataFrame,n=1):
     selected = np.random.choice(obs.columns, n)
+    print('SELECTED',selected)
     T = forecast.index
+    print('T')
+    print(T)
     '''obs.loc[T,selected].plot(label='obs')
     forecast[selected].plot(label='forecast')'''
+    plt.figure()
     plt.plot(obs.loc[T,selected].values, label='{} observed z-score'.format(selected))
     plt.plot(forecast[selected].values, label='{} forecast z-score'.format(selected))
     plt.title('Observed vs Forecast')
     plt.legend()
-    plt.show()
+    #plt.show()
 
 def plotzThresh(z:pd.DataFrame,threshold:float):
     zthresh = z.loc[:,(z.dropna().abs()>threshold).any()]
@@ -83,7 +89,7 @@ def plotzThresh(z:pd.DataFrame,threshold:float):
     plt.xlabel('Time')
     plt.ylabel('z-score')
     plt.legend()
-    plt.show()
+    #plt.show()
 
 
 def PlotSharpeSurface2Param(param_names, Sharpe_master):
@@ -128,7 +134,7 @@ def PlotSharpeSurface2Param(param_names, Sharpe_master):
     # Color bar
     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
 
-    plt.show()
+    #plt.show()
 
 def PlotCumulative2param(p1_space, p2_space, param_names, cumulative_master):
     '''Plots cumulative returns when two parameters are being swept over. Takes parameter spaces, names, cumulative returns mater data frame,
@@ -149,7 +155,7 @@ def PlotCumulative2param(p1_space, p2_space, param_names, cumulative_master):
     plt.title("Cumulative Returns")
     plt.legend(loc='lower left')
     plt.tight_layout()
-    plt.show()
+    #plt.show()
 def PlotReturnsHist2Param(p1_space, p2_space, param_names,R_master):
     '''Plots returns histograms when 2 parameters are being swept over. Takes parameter spaces, names, returns
      master data frame, rebalancing period, and doing string.. '''
@@ -171,4 +177,4 @@ def PlotReturnsHist2Param(p1_space, p2_space, param_names,R_master):
             axes[i, j].set_ylabel('Density')
     plt.suptitle('Returns Distribution')
     plt.tight_layout()
-    plt.show()
+    #plt.show()

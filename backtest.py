@@ -10,7 +10,8 @@ import metrics
 import matplotlib.pyplot as plt
 import warnings
 from joblib import Parallel, delayed
-
+import exog
+import numpy as np
 
 warnings.filterwarnings('ignore', "No supported index is available. Prediction results will be given with an integer index beginning at `start`.")
 
@@ -32,25 +33,36 @@ def Rebalance(w:pd.DataFrame, rebalancePeriod:str)->pd.DataFrame:
     return w_rebalanced
 
 
-def forecast_stock(stock, zp, models, T):
+def forecast_stock(stock, zp, models, T,L):
     """Sequentially update and forecast for each stock in its own process."""
     forecasts = []
+    ex = exog.getExogLagsupdate(zp,L)
     for t in T:
         model = models[stock]
         # Update model with latest data point for the stock
+        #model.update(zp.loc[t, stock],X = ex.loc[t].values.reshape(1,-1))
         model.update(zp.loc[t, stock])
 
         # Forecast the next time step
         forecast = model.predict(n_periods=1)
         # Append forecast value for (t, stock) to the results list
         forecasts.append((t, forecast[0]))  # Check here if forecast needs [0] or just `forecast`
+        '''t_next = t + pd.Timedelta(days=1)  # Assuming daily time steps
+        if t_next in ex.index:  # Check if exogenous data is available for the forecast horizon
+            ex_forecast = ex.loc[t_next].values.reshape(1, -1)
+            forecast = model.predict(n_periods=1, X=ex_forecast)
+            forecasts.append((t, forecast[0]))  # Append the forecast
+        else:
+            print('HERE ', t_next)
+            forecasts.append((t, None))'''
+
     return stock, forecasts
 
-def parallel_stock_forecasts(models, zp, T, z_forecast):
+def parallel_stock_forecasts(models, zp, T, z_forecast,L):
     """Parallelize forecasts across stocks, retaining sequential model updates within each stock."""
     # Run forecast_stock in parallel for each stock
     results = Parallel(n_jobs=-1)(delayed(forecast_stock)(
-        stock, zp, models, T
+        stock, zp, models, T,L
     ) for stock in zp.columns)
 
     # Store results in z_forecast DataFrame
@@ -74,7 +86,7 @@ class Longshort:
      E.g. When pre-smoothing by 'MA' pre_smoothing_params= {'window':5} will smooth by 5 day moving average.
     """
     def __init__(self, z:pd.DataFrame, closeData:pd.DataFrame, momenta:pd.DataFrame, train_window:int, rebalancePeriod:str='W', alpha:float=0.05,
-                 pre_smoothing=None, pre_smooth_params=None, weighting_func:str='linear', weighting_params=None, filter_func=None, filter_params=None, parallel_on=True):
+                 pre_smoothing=None, pre_smooth_params=None, weighting_func:str='linear', weighting_params=None, filter_func=None, filter_params=None, parallel_on=True,exog_on=True,exog_L=3):
         self.z = z
         self.closeData = closeData
         self.momenta = momenta
@@ -88,6 +100,8 @@ class Longshort:
         self.filter_func = filter_func
         self.filter_params = filter_params if filter_params else {}
         self.parallel = parallel_on
+        self.exog_on = exog_on
+        self.exog_L = exog_L
 
     def preSmooth(self,z_pre:pd.DataFrame)->pd.DataFrame:
         """ Handles pre-smoothing of data."""
@@ -109,7 +123,7 @@ class Longshort:
         def getZPForecast(period,zp):
 
             # Train ARIMA models on initial data
-            models = ARIMA.trainARIMA(zp, self.train_window, d_alpha=self.alpha)
+            models = ARIMA.trainARIMA(zp, self.train_window, d_alpha=self.alpha,L=self.exog_L)
             # Initialise forecasts of z_p momentum
             # Important note here: z_forecast[t] will contain the forecast for the NEXT day i.e. what the z-score will be
             # at t+1 day ahead. The reason for this is to make activating the trading signal a bit easier which can be seen
@@ -123,7 +137,7 @@ class Longshort:
 
             if self.parallel:
                 # Parallelise if selected
-                z_forecast = parallel_stock_forecasts(models, zp, T, z_forecast) # Dataframe of one-step ahead forecasts
+                z_forecast = parallel_stock_forecasts(models, zp, T, z_forecast,self.exog_L) # Dataframe of one-step ahead forecasts
             else:
                 # Sequential
                 for t in T:
@@ -136,7 +150,10 @@ class Longshort:
                         forecast, conf = m[0][0], m[1][0]  # Get forcast and conf intervals (not used currently)
                         z_forecast.loc[t, c] = forecast  # Save forecast
                         z_conf.loc[t, c] = conf
-
+            print('zp')
+            print(zp.head())
+            print('zf')
+            print(z_forecast.head())
             plotting.plotForecast(zp.shift(-1),z_forecast)  # Call plotting function to randomly select a stock and plot
             # its observed and forecasted z score. Observed z scores need to be shifted to align with forecast dataframe
             return z_forecast
@@ -213,8 +230,8 @@ class Longshort:
         zfast.name = 'z-fast'
 
         # Train initial ARIMA models for fast and slow momenta
-        fastmodels = ARIMA.trainARIMA(zfast, self.train_window,d_alpha=self.alpha)
-        slowmodels = ARIMA.trainARIMA(zslow, self.train_window,d_alpha=self.alpha)
+        fastmodels = ARIMA.trainARIMA(zfast, self.train_window,d_alpha=self.alpha,L=self.exog_L)
+        slowmodels = ARIMA.trainARIMA(zslow, self.train_window,d_alpha=self.alpha,L=self.exog_L)
 
         # Initialise forecast dataframes
         zfast_forecast = pd.DataFrame(index=zfast.index[self.train_window:], columns=zfast.columns)
@@ -225,8 +242,8 @@ class Longshort:
         T = zslow.iloc[self.train_window:, :].index  # Get out of sample time steps to iterate through
 
         if self.parallel:
-            zfast_forecast = parallel_stock_forecasts(fastmodels,zfast,T,zfast_forecast)
-            zslow_forecast = parallel_stock_forecasts(slowmodels,zslow,T,zslow_forecast)
+            zfast_forecast = parallel_stock_forecasts(fastmodels,zfast,T,zfast_forecast, self.exog_L)
+            zslow_forecast = parallel_stock_forecasts(slowmodels,zslow,T,zslow_forecast, self.exog_L)
         else:
             # Simulate trade by iterating through days from end of training onwards
             for t in T:
@@ -255,7 +272,7 @@ class Longshort:
         # This strategy activates trading signals when the zfast>zslow
         prefiltered = (zfast_forecast.abs() > zslow_forecast.abs()).astype(int)
         unweighted = filters.filter(zfast,prefiltered).filterFunction(self.filter_func,self.filter_params)
-        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'])
+        weighted = (weighting.signalWeighter(unweighted=unweighted, z=zfast,momenta=self.momenta.loc[fast,'momentum'],priceData=self.closeData)
                     .getWeightedSignal(self.weighting_func,self.weighting_params))
         rebalancedSignal = Rebalance(weighted, self.rebalancePeriod)
 
@@ -276,6 +293,7 @@ def getMetrics(signal:pd.DataFrame,priceData:pd.DataFrame,rebalance:str):
     print(returns)
     plotting.plotReturns(returns)
     plotting.plotReturnsHist(returns)
+    plotting.plotLogReturnsHist(returns)
     cumulative = metrics.CumulativeReturns(priceData, signal, rebalance)
     print('CUMULATIVE')
     print(cumulative)

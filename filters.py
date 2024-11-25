@@ -28,7 +28,7 @@ class filter:
             print('window = ', window)
             top = params.get('top',5)
             high = params.get('high', False)
-            vol = priceData.pct_change.fillna(0).rolling(window=window).std()
+            vol = priceData.pct_change().fillna(0).rolling(window=window).std()
             for index, row in vol.iterrows():
                 ranked = row.sort_values(ascending=high)
                 selectedTickers = ranked.head(top).index.tolist()
