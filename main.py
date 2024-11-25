@@ -15,7 +15,7 @@ import exog
 closeData = pd.read_csv('2020-2024_Data.csv', index_col='date')
 closeData.index = pd.to_datetime(closeData.index)
 
-closeData = closeData.iloc[0:700,:]  # Choose sub set for testing
+closeData = closeData.iloc[0:700,0:99]  # Choose sub set for testing
 
 periods = [1, 3, 6]  # Define Momenta periods (months)
 
