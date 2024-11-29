@@ -27,10 +27,10 @@ class filter:
             window = params.get('window',66)
             print('window = ', window)
             top = params.get('top',5)
-            high = params.get('high', False)
+            lowVol = params.get('lowVol', False)
             vol = priceData.pct_change().fillna(0).rolling(window=window).std()
             for index, row in vol.iterrows():
-                ranked = row.sort_values(ascending=high)
+                ranked = row.sort_values(ascending=lowVol)
                 selectedTickers = ranked.head(top).index.tolist()
                 self.unweighted.loc[index, (~self.unweighted.columns.isin(selectedTickers))] = 0
             print('Successfully vol weighted')

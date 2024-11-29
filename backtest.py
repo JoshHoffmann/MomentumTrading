@@ -47,14 +47,6 @@ def forecast_stock(stock, zp, models, T,L):
         forecast = model.predict(n_periods=1)
         # Append forecast value for (t, stock) to the results list
         forecasts.append((t, forecast[0]))  # Check here if forecast needs [0] or just `forecast`
-        '''t_next = t + pd.Timedelta(days=1)  # Assuming daily time steps
-        if t_next in ex.index:  # Check if exogenous data is available for the forecast horizon
-            ex_forecast = ex.loc[t_next].values.reshape(1, -1)
-            forecast = model.predict(n_periods=1, X=ex_forecast)
-            forecasts.append((t, forecast[0]))  # Append the forecast
-        else:
-            print('HERE ', t_next)
-            forecasts.append((t, None))'''
 
     return stock, forecasts
 
@@ -247,7 +239,6 @@ class Longshort:
         else:
             # Simulate trade by iterating through days from end of training onwards
             for t in T:
-                print('t = {}, T = {}'.format(t,T[-1]))
                 # Iterate through stock series and get fitted models
                 for c in zfast.columns:
                     fastmodel = fastmodels[c]

@@ -14,7 +14,6 @@ def VIX(z:pd.DataFrame):
 
         aligned_data.columns = ['zscore', 'VIX']
 
-        print(aligned_data.head())
         aligned_data['Lagged_VIX'] = aligned_data['VIX'].shift(i)
         aligned_data = aligned_data.dropna()
         plt.figure(figsize=(10, 6))

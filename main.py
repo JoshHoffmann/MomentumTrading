@@ -15,7 +15,7 @@ import exog
 closeData = pd.read_csv('2020-2024_Data.csv', index_col='date')
 closeData.index = pd.to_datetime(closeData.index)
 
-closeData = closeData.iloc[0:700,0:99]  # Choose sub set for testing
+closeData = closeData.iloc[0:1000,:]  # Choose sub set for testing
 
 periods = [1, 3, 6]  # Define Momenta periods (months)
 
@@ -26,8 +26,8 @@ zscores = momenta.getZScores(Momenta)  # Get cross-sectional z-scores for all mo
 plotting.plotZScores(zscores, periods)
 
 
-signal = (backtest.Longshort(zscores, closeData, Momenta, 200, alpha=0.01, rebalancePeriod='W', pre_smoothing='MA',
-                             pre_smooth_params={'window': 3}, filter_func='vol', filter_params={'priceData':closeData},weighting_func='linear', weighting_params={'beta': 1}).
+signal = (backtest.Longshort(zscores, closeData, Momenta, 200, alpha=0.01, rebalancePeriod='W', pre_smoothing='EWM',
+                             pre_smooth_params={'span': 2}, filter_func='vol', filter_params={'priceData':closeData,'lowVol':True},weighting_func='volProp', weighting_params={'window': 100}).
           strategy(strategy='CrossOver', fast=1,slow=6))
 
 plt.show()

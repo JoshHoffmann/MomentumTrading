@@ -46,7 +46,10 @@ def plotReturnsHist(returns:pd.DataFrame):
     #plt.show()
 def plotLogReturnsHist(returns:pd.DataFrame):
     LogReturns = (1+returns/returns.shift(1)).apply(np.log)
-    mean  = LogReturns.dropna().mean()
+    mean  = LogReturns.iloc[2:].dropna().mean()
+    print('LOGMEAN ', mean)
+    print('LOGRETURNS')
+    print(LogReturns)
     plt.figure(figsize=(10, 6))
 
     sea.histplot(LogReturns, bins=60, color="skyblue", stat="density")
